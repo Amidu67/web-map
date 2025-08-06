@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Devtraco Estate Navigation</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css"/>
+  <link rel="stylesheet" href="Style.css"/>
+</head>
+<body>
+<div class="navbar" id="navLinks">
+  <a href="#" onclick="show('home')">Home</a>
+  <a href="#" onclick="show('about')">About</a>
+  <a href="#" onclick="show('contact')">Contact</a>
+</div>
+
+<div id="home" class="page active">
+  <h1>Welcome to Devtraco Estate</h1>
+  <p>Explore Devtraco with live GPS navigation, voice-guided directions, and seamless search functionality.</p>
+  <button onclick="show('map')">Start Navigation</button>
+</div>
+
+<div id="about" class="page">
+  <div class="content">
+    <h2>About Devtraco Estate</h2>
+    <p>Devtraco Estate is a premier residential community located in the serene area of Tema Community 25, Accra, Ghana. It offers high-quality housing units with modern amenities, reliable security systems, excellent roads, and access to schools, hospitals, and shopping centers.</p>
+    <p>Visit: <a href="https://devtraco.com" target="_blank" style="color: #ffcc00;">https://devtraco.com</a></p>
+    <button onclick="show('home')">Return</button>
+  </div>
+</div>
+
+<div id="contact" class="page">
+  <div class="content">
+    <h2>Contact Us</h2>
+    <p>
+      For inquiries and support:<br>
+      📧 Email: info@devtraco.com<br>
+      ☎ Phone: +233 302 812 000<br>
+      📍 Address: Devtraco Courts, Community 25, Tema, Ghana
+    </p>
+    <button onclick="show('home')">Return</button>
+  </div>
+</div>
+
+<div id="mapPage" class="page">
+  <button class="return-btn" onclick="show('home')">&larr; Back</button>
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="Search house number or location in Ghana"/>
+    <button onclick="doSearch()">Search</button>
+    <div id="search-results"></div>
+  </div>
+  <div id="map"></div>
+  <div id="loadingSpinner" class="loading-spinner" style="display: none;"></div>
+  <div class="voice-controls">
+    <button class="voice-btn" onclick="repeatInstruction()" title="Repeat instruction">🔊</button>
+  </div>
+  <button class="recenter-btn" onclick="recenterMap()" title="Recenter on my location">📍</button>
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.min.js"></script>
+<script src="Java.js"></script>
+</body>
+</html>

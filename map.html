@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Devtraco Estate Navigation</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"/>
+  <style>
+    #map { height: 100vh; }
+    .leaflet-top.leaflet-left { margin-top: 60px; }
+    .search-bar {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      width: 70%;
+    }
+    .blinking { animation: blink 1s infinite; }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+    #back-btn {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 1001;
+      background: #fff;
+      padding: 5px 10px;
+      border: none;
+      cursor: pointer;
+    }
+    .debug-console {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      z-index: 1000;
+      background: white;
+      padding: 10px;
+      border-radius: 5px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <button id="back-btn" onclick="window.location.href='index.html'">← Back</button>
+  <div class="search-bar" id="search-box"></div>
+  <div id="map"></div>
+  <div class="debug-console" id="debug"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
+  <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+  <script src="https://unpkg.com/esri-leaflet@3.0.10/dist/esri-leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-providers"></script>
+  <script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol@0.76.0/dist/L.Control.Locate.min.js"></script>
+
+  <script>
+    // Debugging console
+    const debug = document.getElementById('debug');
+    function log(message) {
+      debug.innerHTML += `<div>${new Date().toLocaleTimeString()}: ${message}</div>`;
+      debug.scrollTop = debug.scrollHeight;
+    }
+
+    // Initialize map
+    const map = L.map('map').setView([5.7276, -0.0284], 17);
+    log('Map initialized');
+
+    // Base layers
+    const street = L.tileLayer.provider('OpenStreetMap.Mapnik').addTo(map);
+    const satellite = L.tileLayer.provider('Esri.WorldImagery');
+    
+    L.control.layers({
+      "Street View": street,
+      "Satellite View": satellite
+    }).addTo(map);
+
+    // GeoJSON layer with more visible style
+    const geoJsonLayer = L.geoJSON(null, {
+      style: { 
+        color: "#FF0000", 
+        weight: 3,
+        fillColor: "#FF7800",
+        fillOpacity: 0.5
+      },
+      onEachFeature: function(feature, layer) {
+        if (feature.properties && feature.properties.name) {
+          layer.bindPopup(`<b>${feature.properties.name}</b>`);
+        }
+      }
+    }).addTo(map);
+
+    // Load GeoJSON file (must be in same directory as HTML file)
+    log('Loading DEVTRACO.json...');
+    fetch('DEV12.json')
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return res.json();
+      })
+      .then(data => {
+        log('GeoJSON loaded successfully');
+        console.log('GeoJSON data:', data); // Check in browser console
+        
+        // Validate data structure
+        if (!data.type) throw new Error("Invalid GeoJSON: missing 'type'");
+        
+        geoJsonLayer.addData(data);
+        log(`Added ${data.features ? data.features.length : data.geometries.length} features to map`);
+        
+        // Zoom to features
+        map.fitBounds(geoJsonLayer.getBounds());
+        log('Map zoomed to feature bounds');
+      })
+      .catch(err => {
+        log(`Error loading GeoJSON: ${err.message}`);
+        console.error(err);
+        
+        // Add sample data if real file fails
+        const sampleData = {
+          type: "FeatureCollection",
+          features: [{
+            type: "Feature",
+            properties: { name: "Sample Building" },
+            geometry: {
+              type: "Polygon",
+              coordinates: [[
+                [5.726, -0.027], [5.728, -0.027],
+                [5.728, -0.029], [5.726, -0.029],
+                [5.726, -0.027]
+              ]]
+            }
+          }]
+        };
+        geoJsonLayer.addData(sampleData);
+        log('Added sample data instead');
+      });
+
+    // Rest of your code (location tracking, search, etc.)...
+    let userMarker;
+    function onLocationFound(e) {
+      if (userMarker) map.removeLayer(userMarker);
+      userMarker = L.marker(e.latlng, {
+        icon: L.icon({
+          iconUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon.png',
+          iconSize: [25, 41],
+          iconAnchor: [12, 41],
+          className: 'blinking'
+        })
+      }).addTo(map);
+      log(`User location updated: ${e.latlng.lat}, ${e.latlng.lng}`);
+    }
+
+    map.on('locationfound', onLocationFound);
+    map.locate({ watch: true, setView: false, maxZoom: 18 });
+  </script>
+</body>
+</html>
