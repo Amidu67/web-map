@@ -240,6 +240,23 @@
       stroke-width: 4;
       stroke-opacity: 0.5;
     }
+
+    /* Custom popup styling */
+    .leaflet-popup-content-wrapper {
+      border-radius: 8px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+    }
+    .leaflet-popup-content {
+      margin: 10px;
+      text-align: center;
+    }
+    .leaflet-popup-content img {
+      max-width: 250px;
+      max-height: 250px;
+      margin-top: 10px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+    }
   </style>
 </head>
 <body>
@@ -308,7 +325,7 @@
   let roadData = [];
   let highlightedHouse = null;
 
-  // Updated Devtraco Estate bounding box based on POINTS.json
+  // Updated Devtraco Estate bounding box based on Building_point.json
   const estateBounds = {
     minLat: 5.7260,
     maxLat: 5.7400,
@@ -404,29 +421,46 @@
     streetLayer.addTo(map);
     L.control.layers(baseLayers).addTo(map);
 
-    // Load estate GeoJSON (houses)
-    fetch('POINTS.json')
+    // Load estate GeoJSON (houses) from Building_point.json
+    fetch('Building_point.json')
       .then(response => {
         if (!response.ok) throw new Error('Failed to load house GeoJSON');
         return response.json();
       })
       .then(data => {
         houseData = data.features;
+        console.log(`Loaded ${houseData.length} buildings from Building_point.json`);
       })
       .catch(error => {
         console.error('Error loading house data:', error);
+        // Fallback to the sample data from your Building_point.json
         const sampleHouseData = {
-          type: "FeatureCollection",
-          features: [{
-            type: "Feature",
-            properties: { name: "Sample Building", type: "building", HOUSE_NUMB: "A1" },
-            geometry: {
-              type: "Point",
-              coordinates: [0.0447, 5.7328]
+          "type":"FeatureCollection",
+          "features":[{
+            "type":"Feature",
+            "id":54,
+            "geometry":{
+              "type":"Point",
+              "coordinates":[0.046657388234413413,5.7315854133107598]
+            },
+            "properties":{
+              "FID":54,
+              "TARGET_FID":1146,
+              "OBJECTID_1":1140,
+              "Northings":385586.78672799998,
+              "Eastings":1280192.4411299999,
+              "CreationDa":1752624000000,
+              "Creator":"sfiatuga",
+              "EditDate":1754092800000,
+              "Editor":"sfiatuga",
+              "HOUSE_NUMB":"SS14",
+              "ORIG_FID":55,
+              "Image_URL":"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRMNYAE53rdANIf0M0s82pbE9L8S6-c6s_fVQ&s"
             }
           }]
         };
         houseData = sampleHouseData.features;
+        console.log('Using fallback building data with 1 house');
       });
 
     // Load road GeoJSON and cache for performance
@@ -864,9 +898,16 @@
       shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
       shadowSize: [41, 41]
     });
+    
+    // Create popup content with image if available
+    let popupContent = `<b>House:</b> ${house.properties.HOUSE_NUMB}`;
+    if (house.properties.Image_URL) {
+      popupContent += `<br><img src="${house.properties.Image_URL}" style="max-width:250px; max-height:250px; margin-top:10px;">`;
+    }
+    
     highlightedHouse = L.marker(houseLatLng, { icon: houseIcon })
       .addTo(map)
-      .bindPopup(`<b>House:</b> ${house.properties.HOUSE_NUMB}`)
+      .bindPopup(popupContent)
       .openPopup();
 
     if (userPos.length) {
@@ -874,7 +915,7 @@
         map.removeControl(routingControl);
       }
 
-      // Route directly to the building point (no road snapping for destination)
+      // Route directly to the building point
       routingControl = L.Routing.control({
         waypoints: [
           L.latLng(userPos[0], userPos[1]),
